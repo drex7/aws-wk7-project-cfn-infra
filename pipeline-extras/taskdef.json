@@ -1,0 +1,56 @@
+{
+	"executionRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskExecutionRole",
+	"taskRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskRole",
+	"networkMode": "awsvpc",
+	"cpu": "256",
+	"memory": "512",
+	"family": "GalleryApp-v2-task-def",
+	"requiresCompatibilities": [
+		"FARGATE"
+	],
+	"containerDefinitions": [
+		{
+			"name": "GalleryApp-v2-Container",
+			"image": "985539763589.dkr.ecr.eu-central-1.amazonaws.com/gallery-app-v2-ecr-repo:latest",
+			"essential": true,
+			"portMappings": [
+				{
+					"hostPort": 3000,
+					"protocol": "tcp",
+					"containerPort": 3000
+				}
+			],
+			"secrets": [
+				{
+					"name": "DATABASE_URL",
+					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
+				}
+			],
+			"environment": [
+				{
+					"name": "AWS_S3_BUCKET",
+					"value": "webapp-images-v2-985539763589"
+				}
+			]
+		}
+	],
+	"logConfiguration": {
+		"logDriver": "awslogs",
+		"options": {
+			"awslogs-group": "/ecs/GalleryApp-v2",
+			"awslogs-region": "eu-central-1",
+			"awslogs-create-group": "true",
+			"awslogs-stream-prefix": "ecs"
+		}
+	},
+	"healthCheck": {
+		"command": [
+			"CMD-SHELL",
+			"curl -f http://localhost:3000/api/health || exit 1"
+		],
+		"interval": 10,
+		"timeout": 5,
+		"retries": 3,
+		"startPeriod": 100
+	}
+}

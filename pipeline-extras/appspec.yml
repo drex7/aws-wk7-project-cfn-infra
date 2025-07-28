@@ -1,0 +1,9 @@
+version: 0.0
+Resources:
+  - TargetService:
+      Type: AWS::ECS::Service
+      Properties:
+        TaskDefinition: "arn:aws:ecs:eu-central-1:985539763589:task-definition/GalleryApp-v2-task-def"
+        LoadBalancerInfo:
+          ContainerName: "GalleryApp-v2-Container"
+          ContainerPort: 3000
