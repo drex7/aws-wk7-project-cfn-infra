@@ -11,7 +11,7 @@ Resources:
   PipelineArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "artifacts-taskify-app-bucket-8574"
+      BucketName: "artifacts-taskify-app-bucket-8574"
       VersioningConfiguration:
         Status: Enabled
       PublicAccessBlockConfiguration:
