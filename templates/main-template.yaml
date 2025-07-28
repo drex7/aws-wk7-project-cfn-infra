@@ -15,7 +15,7 @@ Parameters:
   ProjectTag: { Type: String, Default: "week7-project1" }
   TemplatesURL: 
     Type: String
-    Default: 'https://artifacts-gallery-app-v2-bucket-985539763589.s3.eu-central-1.amazonaws.com/templates'
+    Default: 'https://artifacts-taskify-app-bucket-8574.s3.eu-central-1.amazonaws.com/templates'
   VpcCidr: { Type: String, Default: 10.0.0.0/16 }
   
 
