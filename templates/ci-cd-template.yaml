@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CICD stack with CodePipeline for building and deploying the web application
+
+Parameters:
+  ALBListenerArn: { Type: String }
+  AppName: { Type: String }
+  BlueTargetGroupName: { Type: String }
+  CodeDeployRoleArn: { Type: String }
+  CodePipelineRoleArn: { Type: String }
+  ECRRepoName: { Type: String }
+  ECSClusterName: { Type: String }
+  ECSServiceName: { Type: String }
+  EventBridgeRoleArn: { Type: String }
+  GreenTargetGroupName: { Type: String }
+  PipelineArtifactBucketName: { Type: String }
+  ProjectTag: { Type: String }
+
+Resources:
+  # EventBridge Rule to detect new ECR image push events
+  DetectNewECRImageEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: detect-new-ecr-image
+      EventPattern:
+        source: [ "aws.ecr"]
+        detail-type: [ "ECR Image Action"]
+        detail:
+          action-type: [ "PUSH"]
+          repository-name: [ !Ref ECRRepoName ]
+          result: [ "SUCCESS" ]
+      Targets:
+        - Arn: !Sub arn:aws:codepipeline:${AWS::Region}:${AWS::AccountId}:${AppName}-DeployPipeline
+          RoleArn: !Ref EventBridgeRoleArn
+          Id: DeployPipelineTarget
+
+  # CodeDeploy Application and Deployment Group for Blue/Green deployment
+  CodeDeployApp:
+    Type: AWS::CodeDeploy::Application
+    Properties:
+      ApplicationName: !Sub "${AppName}CodeDeployApp"
+      ComputePlatform: ECS
+
+  DeploymentGroup:
+    Type: AWS::CodeDeploy::DeploymentGroup
+    Properties:
+      ApplicationName: !Ref CodeDeployApp
+      DeploymentGroupName: !Sub "${AppName}DeploymentGroup"
+      DeploymentConfigName: CodeDeployDefault.ECSAllAtOnce
+      ServiceRoleArn: !Ref CodeDeployRoleArn
+      AutoRollbackConfiguration:
+        Enabled: true
+        Events: [DEPLOYMENT_FAILURE]
+      BlueGreenDeploymentConfiguration:
+        TerminateBlueInstancesOnDeploymentSuccess:
+          Action: TERMINATE
+          TerminationWaitTimeInMinutes: 2
+        DeploymentReadyOption:
+          ActionOnTimeout: CONTINUE_DEPLOYMENT
+          WaitTimeInMinutes: 0
+      DeploymentStyle:
+        DeploymentType: BLUE_GREEN
+        DeploymentOption: WITH_TRAFFIC_CONTROL
+      LoadBalancerInfo:
+        TargetGroupPairInfoList:
+          - TargetGroups:
+              - Name: !Ref GreenTargetGroupName
+              - Name: !Ref BlueTargetGroupName
+            ProdTrafficRoute:
+              ListenerArns:
+                - !Ref ALBListenerArn
+      ECSServices:
+        - ClusterName: !Ref ECSClusterName
+          ServiceName: !Ref ECSServiceName
+
+  # CodePipeline for Blue/Green deployment using CodeDeploy
+  BlueGreenDeploymentPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${AppName}-DeployPipeline
+      RoleArn: !Ref CodePipelineRoleArn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref PipelineArtifactBucketName
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: S3Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: S3
+                Version: 1
+              Configuration:
+                S3Bucket: !Ref PipelineArtifactBucketName
+                S3ObjectKey: pipeline-extras.zip
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: DeployArtifact
+              RunOrder: 1
+        - Name: ECSDeploy
+          Actions:
+            - Name: CodeDeploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CodeDeploy
+                Version: 1
+              RunOrder: 1
+              Configuration:
+                ApplicationName: !Ref CodeDeployApp
+                DeploymentGroupName: !Ref DeploymentGroup
+              InputArtifacts:
+                - Name: DeployArtifact
+      Tags:
+        - Key: Project
+          Value: !Sub ${AppName}-pipeline
+        - Key: lab
+          Value: !Sub "${ProjectTag}"

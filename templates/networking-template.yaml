@@ -1,0 +1,311 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack template for networking related resources
+
+Parameters:
+  AppName: { Type: String }
+  VpcCidr: { Type: String, Default: 10.0.0.0/16 }
+  PrivateSubnetCidrs: { Type: CommaDelimitedList }
+  PublicSubnetCidrs: { Type: CommaDelimitedList }
+  ProjectTag: { Type: String }
+
+Resources:
+  # VPC
+  MyVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}VPC
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}InternetGateway
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref MyVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Subnets
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Select [0, !Ref PublicSubnetCidrs]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PublicSubnet1
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Select [1, !Ref PublicSubnetCidrs]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PublicSubnet2
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Select [0, !Ref PrivateSubnetCidrs]
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateSubnet1
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref MyVPC
+      CidrBlock: !Select [1, !Ref PrivateSubnetCidrs]
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateSubnet2
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  # Route Tables
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PublicRouteTable
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  # Routes
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Route Table Associations
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+  # Private Route Tables & Associations    
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateRouteTable1
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref MyVPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}PrivateRouteTable2
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet1
+      RouteTableId: !Ref PrivateRouteTable1
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet2
+      RouteTableId: !Ref PrivateRouteTable2
+
+  # Security Groups
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for ECS containers
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ContainerSG
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Load balancer
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ALBSecurityGroup
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  VPCEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security Group for VPC Endpoints
+      GroupName: vpce-sg
+      VpcId: !Ref MyVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: !Ref VpcCidr
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}VPCEndpointSecurityGroup
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  # ======= VPC Endpoints ===============
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref MyVPC
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRouteTable1
+        - !Ref PrivateRouteTable2
+      PolicyDocument:
+        Statement: [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}S3GatewayEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECRDockerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
+      VpcId: !Ref MyVPC
+      VpcEndpointType: Interface
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ECRDockerEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECRAPIEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
+      VpcEndpointType: Interface
+      VpcId: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}ECRAPIEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  CloudWatchLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      VpcEndpointType: Interface
+      VpcId: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}CloudWatchLogsEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  SecretsManagerEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.secretsmanager
+      VpcEndpointType: Interface
+      VpcId: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}SecretsManagerEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  SSMEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
+      VpcEndpointType: Interface
+      VpcId: !Ref MyVPC
+      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
+      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
+      PrivateDnsEnabled: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}SSMEndpoint
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+Outputs:
+  VpcId: { Value: !Ref MyVPC }
+  PublicSubnetIds:
+    Value: !Join [",", [!Ref PublicSubnet1, !Ref PublicSubnet2]]
+  PrivateSubnetIds:
+    Value: !Join [",", [!Ref PrivateSubnet1, !Ref PrivateSubnet2]]
+  ContainerSecurityGroup: { Value: !Ref ContainerSecurityGroup }
+  ALBSecurityGroup: { Value: !Ref ALBSecurityGroup }

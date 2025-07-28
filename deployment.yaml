@@ -1,0 +1,13 @@
+template-file-path: templates/main-template.yaml
+parameters:
+  VpcCidr: 10.0.0.0/16
+  ECRImageTag: latest
+  ProjectTag: week7-project1
+  ContainerPort: '3000'
+  PublicSubnetCidrs: 10.0.1.0/24,10.0.2.0/24
+  TemplatesURL: >-
+    https://week6-cfn-template-bucket-854.s3.eu-central-1.amazonaws.com/templates
+  PrivateSubnetCidrs: 10.0.3.0/24,10.0.4.0/24
+  ECRRepoName: taskify-app-ecr-repo
+  AppName: Taskify
+tags: {}

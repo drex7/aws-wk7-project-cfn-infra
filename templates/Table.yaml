@@ -1,0 +1,33 @@
+Resources:
+  TaskTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: taskId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+        - AttributeName: taskTitle
+          AttributeType: S
+        - AttributeName: taskDescription
+          AttributeType: S
+        - AttributeName: isTaskCompleted
+          AttributeType: B
+        - AttributeName: reminder
+          AttributeType: B
+      KeySchema:
+        - AttributeName: taskId
+          KeyType: HASH
+        - AttributeName: createdAt
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: taskTitleIndex
+          KeySchema:
+            - AttributeName: taskTitle
+              KeyType: HASH
+      Tags:
+        - Key: lab
+          Value: !Ref ProjectTag
+        

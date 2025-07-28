@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stack template for ECS infrastructure
+
+Parameters:
+  ALBSecurityGroup: { Type: String }
+  AppName: { Type: String }
+  AutoScalingRoleArn: { Type: String }
+  ContainerPort: { Type: Number, Default: 3000 }
+  ContainerSecurityGroup: { Type: String }
+  ECRRepoName: { Type: String }
+  ECRImageTag: { Type: String, Default: latest }
+  ECSTaskExecutionRoleArn: { Type: String }
+  ECSTaskRoleArn: { Type: String }
+  PublicSubnetIds: { Type: CommaDelimitedList }
+  PrivateSubnetIds: { Type: CommaDelimitedList }
+  ProjectTag: { Type: String }
+  VpcId: { Type: String }
+
+Resources:
+  CloudWatchLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /ecs/${AppName}
+      RetentionInDays: 7
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Sub ${AppName}-task-def
+      RequiresCompatibilities:
+        - FARGATE
+      Cpu: "256"
+      Memory: "512"
+      ExecutionRoleArn: !Ref ECSTaskExecutionRoleArn
+      TaskRoleArn: !Ref ECSTaskRoleArn
+      NetworkMode: awsvpc
+      RuntimePlatform:
+        CpuArchitecture: X86_64
+        OperatingSystemFamily: LINUX
+      ContainerDefinitions:
+        - Name: !Sub "${AppName}-Container"
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${ECRRepoName}:${ECRImageTag}
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+              Protocol: tcp
+          Essential: true
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              mode: "non-blocking"
+              max-buffer-size: "25m"
+              awslogs-group: !Ref CloudWatchLogsGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: ecs
+              awslogs-create-group: "true"
+          Secrets:
+            - Name: DATABASE_URL
+              ValueFrom: 'arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url'
+          Environment:
+            - Name: AWS_S3_BUCKET
+              Value: webapp-images-v2-985539763589
+          HealthCheck:
+            Command:
+              - CMD-SHELL
+              - curl -f http://localhost:3000/api/health || exit 1
+            Interval: 10
+            Timeout: 5
+            Retries: 3
+            StartPeriod: 100
+      Tags:
+        - Key: Name
+          Value: !Sub "${AppName}Task"
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECSCluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: !Sub "${AppName}Cluster"
+      CapacityProviders:
+        - FARGATE
+      ClusterSettings:
+        - Name: containerInsights
+          Value: disabled
+      Tags:
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  ECSService:
+    Type: AWS::ECS::Service
+    DependsOn: Listener
+    Properties:
+      Cluster: !Ref ECSCluster
+      LaunchType: FARGATE
+      TaskDefinition: !Ref TaskDefinition
+      EnableExecuteCommand: true
+      ServiceName: !Sub ${AppName}ECSService
+      SchedulingStrategy: REPLICA
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          Subnets: !Ref PrivateSubnetIds
+          SecurityGroups:
+            - !Ref ContainerSecurityGroup
+          AssignPublicIp: DISABLED
+      LoadBalancers:
+        - ContainerName: !Sub "${AppName}-Container"
+          ContainerPort: !Ref ContainerPort
+          LoadBalancerName: !Ref AWS::NoValue
+          TargetGroupArn: !Ref BlueTargetGroup
+      PlatformVersion: LATEST
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 100
+      DeploymentController:
+        Type: CODE_DEPLOY
+      ServiceConnectConfiguration:
+        Enabled: false
+      Tags:
+        - Key: Name
+          Value: GalleryXPAppService
+        - Key: lab
+          Value: !Sub "${ProjectTag}"
+
+  # Target Auto Scaling
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Properties:
+      MaxCapacity: 4
+      MinCapacity: 2
+      ResourceId: !Join ['', ['service/', !Ref ECSCluster, '/', !GetAtt ECSService.Name]]
+      RoleARN: !Ref AutoScalingRoleArn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+
+  # Auto Scaling Policy
+  AutoScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: !Sub ${AppName}-cpu-scaling-policy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        TargetValue: 50.0
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 60
+        ScaleOutCooldown: 60
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
+      Name: ApplicationALB
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets: !Ref PublicSubnetIds
+
+  BlueTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /api/health
+      Name: BlueTargetGroup
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: "120"
+
+  GreenTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckPath: /api/health
+      Name: GreenTargetGroup
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      TargetType: ip
+      HealthCheckProtocol: HTTP
+      VpcId: !Ref VpcId
+      TargetGroupAttributes:
+        - Key: deregistration_delay.timeout_seconds
+          Value: "120"
+
+  Listener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref BlueTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+Outputs:
+  ALBDnsName: { Value: !GetAtt LoadBalancer.DNSName }
+  BlueTargetGroupArn: { Value: !Ref BlueTargetGroup }
+  GreenTargetGroupArn: { Value: !Ref GreenTargetGroup }
+  GreenTargetGroupName: { Value: !GetAtt GreenTargetGroup.TargetGroupName }
+  BlueTargetGroupName: { Value: !GetAtt BlueTargetGroup.TargetGroupName }
+  ALBListenerArn: { Value: !Ref Listener }
+  ContainerName: { Value: !Sub "${AppName}-Container" }
+  ECSClusterName: { Value: !Ref ECSCluster }
+  ECSServiceName: { Value: !GetAtt ECSService.Name }
