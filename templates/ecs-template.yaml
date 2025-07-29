@@ -126,7 +126,7 @@ Resources:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
       MaxCapacity: 4
-      MinCapacity: 2
+      MinCapacity: 0
       ResourceId: !Join ['', ['service/', !Ref ECSCluster, '/', !GetAtt ECSService.Name]]
       RoleARN: !Ref AutoScalingRoleArn
       ScalableDimension: ecs:service:DesiredCount
