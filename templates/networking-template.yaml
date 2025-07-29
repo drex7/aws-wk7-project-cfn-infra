@@ -209,24 +209,6 @@ Resources:
           Value: !Sub "${ProjectTag}"
 
   # ======= VPC Endpoints ===============
-  S3GatewayEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
-      VpcId: !Ref MyVPC
-      VpcEndpointType: Gateway
-      RouteTableIds:
-        - !Ref PrivateRouteTable1
-        - !Ref PrivateRouteTable2
-      PolicyDocument:
-        Statement:
-          [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
-      Tags:
-        - Key: Name
-          Value: !Sub ${AppName}S3GatewayEndpoint
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
-
   ECRDockerEndpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
@@ -269,36 +251,6 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${AppName}CloudWatchLogsEndpoint
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
-
-  SecretsManagerEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.secretsmanager
-      VpcEndpointType: Interface
-      VpcId: !Ref MyVPC
-      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
-      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
-      PrivateDnsEnabled: true
-      Tags:
-        - Key: Name
-          Value: !Sub ${AppName}SecretsManagerEndpoint
-        - Key: lab
-          Value: !Sub "${ProjectTag}"
-
-  SSMEndpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.ssm
-      VpcEndpointType: Interface
-      VpcId: !Ref MyVPC
-      SecurityGroupIds: [!Ref VPCEndpointSecurityGroup]
-      SubnetIds: [!Ref PrivateSubnet1, !Ref PrivateSubnet2]
-      PrivateDnsEnabled: true
-      Tags:
-        - Key: Name
-          Value: !Sub ${AppName}SSMEndpoint
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
