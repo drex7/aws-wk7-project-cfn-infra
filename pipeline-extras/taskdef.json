@@ -11,25 +11,13 @@
 	"containerDefinitions": [
 		{
 			"name": "Taskify-Container",
-			"image": "985539763589.dkr.ecr.eu-central-1.amazonaws.com/gallery-app-v2-ecr-repo:latest",
+			"image": "985539763589.dkr.ecr.eu-central-1.amazonaws.com/taskify-app-ecr-repo:latest",
 			"essential": true,
 			"portMappings": [
 				{
 					"hostPort": 3000,
 					"protocol": "tcp",
 					"containerPort": 3000
-				}
-			],
-			"secrets": [
-				{
-					"name": "DATABASE_URL",
-					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/Taskify/db/url"
-				}
-			],
-			"environment": [
-				{
-					"name": "AWS_S3_BUCKET",
-					"value": "webapp-images-v2-985539763589"
 				}
 			]
 		}

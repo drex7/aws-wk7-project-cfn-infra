@@ -53,12 +53,6 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: ecs
               awslogs-create-group: "true"
-          Secrets:
-            - Name: DATABASE_URL
-              ValueFrom: 'arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url'
-          Environment:
-            - Name: AWS_S3_BUCKET
-              Value: webapp-images-v2-985539763589
           HealthCheck:
             Command:
               - CMD-SHELL
@@ -116,8 +110,6 @@ Resources:
       ServiceConnectConfiguration:
         Enabled: false
       Tags:
-        - Key: Name
-          Value: GalleryXPAppService
         - Key: lab
           Value: !Sub "${ProjectTag}"
 

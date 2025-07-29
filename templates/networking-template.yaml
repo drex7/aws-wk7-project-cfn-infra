@@ -121,7 +121,7 @@ Resources:
       SubnetId: !Ref PublicSubnet2
       RouteTableId: !Ref PublicRouteTable
 
-  # Private Route Tables & Associations    
+  # Private Route Tables & Associations
   PrivateRouteTable1:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -219,7 +219,8 @@ Resources:
         - !Ref PrivateRouteTable1
         - !Ref PrivateRouteTable2
       PolicyDocument:
-        Statement: [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
+        Statement:
+          [{ Action: "s3:*", Effect: Allow, Principal: "*", Resource: "*" }]
       Tags:
         - Key: Name
           Value: !Sub ${AppName}S3GatewayEndpoint
