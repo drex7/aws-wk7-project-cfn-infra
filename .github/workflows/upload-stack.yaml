@@ -27,6 +27,7 @@ jobs:
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_GITHUB_OIDC_ROLE_ARN }}
+          role-session-name: GitHubActionsSession
 
       - name: Upload CloudFormation templates to S3
         run: |
