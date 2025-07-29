@@ -19,6 +19,12 @@
 					"protocol": "tcp",
 					"containerPort": 3000
 				}
+			],
+			"environment": [
+				{
+					"name": "NODE_ENV",
+					"value": "production"
+				}
 			]
 		}
 	],
