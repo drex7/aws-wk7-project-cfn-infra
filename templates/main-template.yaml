@@ -13,17 +13,18 @@ Parameters:
     Type: CommaDelimitedList
     Default: 10.0.3.0/24, 10.0.4.0/24
   ProjectTag: { Type: String, Default: "week7-project1" }
-  TemplatesURL: 
-    Type: String
-    Default: 'https://week7-cfn-template-bucket.s3.eu-central-1.amazonaws.com/templates'
+  # TemplatesURL: 
+  #   Type: String
+  #   Default: 'https://week7-cfn-template-bucket.s3.eu-central-1.amazonaws.com/templates'
   VpcCidr: { Type: String, Default: 10.0.0.0/16 }
+  PipelineArtifactBucketName: { Type: String, Default: week7-cfn-template-bucket }
   
 
 Resources:
   NetworkingStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplatesURL}/networking-template.yaml
+      TemplateURL: !Sub 'https://${PipelineArtifactBucketName}.s3.eu-central-1.amazonaws.com/templates/networking-template.yaml'
       Parameters:
         AppName: !Ref AppName
         VpcCidr: !Ref VpcCidr
@@ -35,29 +36,18 @@ Resources:
   IAMStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplatesURL}/iam-template.yaml
+      TemplateURL: !Sub 'https://${PipelineArtifactBucketName}.s3.eu-central-1.amazonaws.com/templates/iam-template.yaml'
       Parameters:
         AppName: !Ref AppName
         ProjectTag: !Ref ProjectTag
         ECRRepoName: !Ref ECRRepoName
-
-  S3Stack:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub ${TemplatesURL}/s3-template.yaml
-      Parameters:
-        ALBDnsName: !GetAtt ECSStack.Outputs.ALBDnsName
-        ECSTaskRoleArn: !GetAtt IAMStack.Outputs.ECSTaskRoleArn
-        CodeDeployRoleArn: !GetAtt IAMStack.Outputs.CodeDeployRoleArn
-        CodePipelineRoleArn: !GetAtt IAMStack.Outputs.CodePipelineRoleArn
-        EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
-
+        PipelineArtifactBucketName: !Ref PipelineArtifactBucketName
 
   # Include ECS Stack
   ECSStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplatesURL}/ecs-template.yaml
+      TemplateURL: !Sub 'https://${PipelineArtifactBucketName}.s3.eu-central-1.amazonaws.com/templates/ecs-template.yaml'
       Parameters:
         ALBSecurityGroup: !GetAtt NetworkingStack.Outputs.ALBSecurityGroup
         AppName: !Ref AppName
@@ -78,7 +68,7 @@ Resources:
   CICDStack:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplatesURL}/ci-cd-template.yaml
+      TemplateURL: !Sub 'https://${PipelineArtifactBucketName}.s3.eu-central-1.amazonaws.com/templates/ci-cd-template.yaml'
       Parameters:
         AppName: !Ref AppName
         ALBListenerArn: !GetAtt ECSStack.Outputs.ALBListenerArn
@@ -90,7 +80,7 @@ Resources:
         ECSServiceName: !GetAtt ECSStack.Outputs.ECSServiceName
         EventBridgeRoleArn: !GetAtt IAMStack.Outputs.EventBridgeRoleArn
         GreenTargetGroupName: !GetAtt ECSStack.Outputs.GreenTargetGroupName
-        PipelineArtifactBucketName: !GetAtt S3Stack.Outputs.PipelineArtifactBucketName
+        PipelineArtifactBucketName: !Ref PipelineArtifactBucketName
         ProjectTag: !Ref ProjectTag
 
 

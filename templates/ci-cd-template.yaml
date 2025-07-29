@@ -12,7 +12,7 @@ Parameters:
   ECSServiceName: { Type: String }
   EventBridgeRoleArn: { Type: String }
   GreenTargetGroupName: { Type: String }
-  PipelineArtifactBucketName: { Type: String }
+  PipelineArtifactBucketName: { Type: String, Default: 'week7-cfn-template-bucket' }
   ProjectTag: { Type: String }
 
 Resources:

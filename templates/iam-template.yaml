@@ -5,6 +5,7 @@ Parameters:
   AppName: { Type: String }
   ProjectTag: { Type: String }
   ECRRepoName: { Type: String }
+  PipelineArtifactBucketName: { Type: String, Default: week7-cfn-template-bucket }
 
 Resources:
   EventBridgeRole:
@@ -49,8 +50,8 @@ Resources:
                   - s3:GetBucketVersioning
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::artifacts-gallery-app-v2-bucket-${AWS::AccountId}/*
-                  - !Sub arn:aws:s3:::artifacts-gallery-app-v2-bucket-${AWS::AccountId}
+                  - !Sub arn:aws:s3:::${PipelineArtifactBucketName}/*
+                  - !Sub arn:aws:s3:::${PipelineArtifactBucketName}
               - Effect: Allow
                 Action:
                   - codedeploy:CreateDeployment
