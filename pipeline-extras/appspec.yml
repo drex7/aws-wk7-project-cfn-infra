@@ -3,7 +3,7 @@ Resources:
   - TargetService:
       Type: AWS::ECS::Service
       Properties:
-        TaskDefinition: "arn:aws:ecs:eu-central-1:985539763589:task-definition/GalleryApp-v2-task-def"
+        TaskDefinition: "arn:aws:ecs:eu-central-1:985539763589:task-definition/Taskify-task-def"
         LoadBalancerInfo:
-          ContainerName: "GalleryApp-v2-Container"
+          ContainerName: "Taskify-Container"
           ContainerPort: 3000

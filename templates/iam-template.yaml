@@ -98,17 +98,18 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
       Policies:
-        - PolicyName: access-secrets-ssm
+        - PolicyName: !Sub ${AppName}-SSMAccessPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
                   - "ssm:GetParameters"
-                  - "secretsmanager:GetSecretValue"
+                  - "ssm:GetParameter"
+                  - "ssm:GetParametersByPath"
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
-                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppName}/*"
       Tags:
         - Key: Name
           Value: !Sub "${AppName}-ECSTaskExecutionRole"
@@ -134,19 +135,22 @@ Resources:
                 aws:SourceArn: !Sub "arn:aws:ecs:eu-central-1:${AWS::AccountId}:*"
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-        - arn:aws:iam::aws:policy/AmazonRDSReadOnlyAccess
       Policies:
-        - PolicyName: AccessSecretsPolicy
+        - PolicyName: !Sub ${AppName}-DynamoDBAccessPolicy
           PolicyDocument:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - "ssm:GetParameters"
-                  - "secretsmanager:GetSecretValue"
+                  - dynamodb:GetItem
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:DeleteItem
+                  - dynamodb:Scan
+                  - dynamodb:Query
                 Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
-                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:*"
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TaskifyTasks
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TaskifyTasks/index/*
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-ECSTaskRole

@@ -1,16 +1,16 @@
 {
-	"executionRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskExecutionRole",
-	"taskRoleArn": "arn:aws:iam::985539763589:role/GalleryApp-v2-ECSTaskRole",
+	"executionRoleArn": "arn:aws:iam::985539763589:role/Taskify-ECSTaskExecutionRole",
+	"taskRoleArn": "arn:aws:iam::985539763589:role/Taskify-ECSTaskRole",
 	"networkMode": "awsvpc",
 	"cpu": "256",
 	"memory": "512",
-	"family": "GalleryApp-v2-task-def",
+	"family": "Taskify-task-def",
 	"requiresCompatibilities": [
 		"FARGATE"
 	],
 	"containerDefinitions": [
 		{
-			"name": "GalleryApp-v2-Container",
+			"name": "Taskify-Container",
 			"image": "985539763589.dkr.ecr.eu-central-1.amazonaws.com/gallery-app-v2-ecr-repo:latest",
 			"essential": true,
 			"portMappings": [
@@ -23,7 +23,7 @@
 			"secrets": [
 				{
 					"name": "DATABASE_URL",
-					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/GalleryApp-v2/db/url"
+					"valueFrom": "arn:aws:ssm:eu-central-1:985539763589:parameter/Taskify/db/url"
 				}
 			],
 			"environment": [
@@ -37,7 +37,7 @@
 	"logConfiguration": {
 		"logDriver": "awslogs",
 		"options": {
-			"awslogs-group": "/ecs/GalleryApp-v2",
+			"awslogs-group": "/ecs/Taskify",
 			"awslogs-region": "eu-central-1",
 			"awslogs-create-group": "true",
 			"awslogs-stream-prefix": "ecs"
