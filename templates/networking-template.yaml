@@ -254,6 +254,56 @@ Resources:
         - Key: lab
           Value: !Sub "${ProjectTag}"
 
+  # S3 VPC Gateway Endpoint for ECR image pulling
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MyVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.s3"
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRouteTable1
+        - !Ref PrivateRouteTable2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:DeleteObject"
+              - "s3:ListBucket"
+            Resource: "*"
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-s3-endpoint
+        - Key: Lab
+          Value: !Ref ProjectTag
+
+  # DynamoDB VPC Gateway Endpoint
+  DynamoDBEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref MyVPC
+      ServiceName: !Sub "com.amazonaws.${AWS::Region}.dynamodb"
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRouteTable1
+        - !Ref PrivateRouteTable2
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: "*"
+            Action: "*"
+            Resource: "*"
+      Tags:
+        - Key: Name
+          Value: !Sub ${AppName}-dynamodb-endpoint
+        - Key: Lab
+          Value: !Ref ProjectTag
+
 Outputs:
   VpcId: { Value: !Ref MyVPC }
   PublicSubnetIds:
