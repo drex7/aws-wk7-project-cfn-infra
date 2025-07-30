@@ -95,22 +95,31 @@ Resources:
             Principal:
               Service: ecs-tasks.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
       Policies:
-        - PolicyName: !Sub ${AppName}-SSMAccessPolicy
+        - PolicyName: !Sub ${AppName}-ECRAccessPolicy
           PolicyDocument:
-            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
-                  - "ssm:GetParameters"
-                  - "ssm:GetParameter"
-                  - "ssm:GetParametersByPath"
-                Resource:
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/*"
-                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppName}/*"
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:DescribeRepositories
+                  - ecr:ListImages
+                  - ecr:DescribeImages
+                Resource: "*"
+
+        - PolicyName: !Sub ${AppName}-LoggingAccess
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:CreateLogGroup
+                  - logs:DescribeLogStreams
+                Resource: "*"
       Tags:
         - Key: Name
           Value: !Sub "${AppName}-ECSTaskExecutionRole"
