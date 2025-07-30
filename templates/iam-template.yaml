@@ -158,10 +158,11 @@ Resources:
                   - dynamodb:DeleteItem
                   - dynamodb:Scan
                   - dynamodb:Query
-                  - dynamodb:ListTables
+                  - dynamodb:DescribeTable
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TaskifyTask
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/TaskifyTask/index/*
+                  
       Tags:
         - Key: Name
           Value: !Sub ${AppName}-ECSTaskRole
