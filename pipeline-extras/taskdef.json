@@ -45,6 +45,6 @@
 		"interval": 10,
 		"timeout": 10,
 		"retries": 3,
-		"startPeriod": 100
+		"startPeriod": 160
 	}
 }

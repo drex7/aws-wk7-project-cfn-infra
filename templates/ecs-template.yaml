@@ -63,7 +63,7 @@ Resources:
             Interval: 10
             Timeout: 10
             Retries: 3
-            StartPeriod: 100
+            StartPeriod: 160
       Tags:
         - Key: Name
           Value: !Sub "${AppName}Task"
