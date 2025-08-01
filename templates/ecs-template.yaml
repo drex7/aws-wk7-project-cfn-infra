@@ -59,7 +59,7 @@ Resources:
           HealthCheck:
             Command:
               - CMD-SHELL
-              - "/bin/sh -c 'curl -f http://localhost:3000 || exit 1'"
+              - curl -f http://localhost:3000/api/health || exit 1
             Interval: 30
             Timeout: 10
             Retries: 3
@@ -157,7 +157,7 @@ Resources:
       Port: !Ref ContainerPort
       Protocol: HTTP
       TargetType: ip
-      HealthCheckPath: /
+      HealthCheckPath: /api/health
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
@@ -177,7 +177,7 @@ Resources:
       Port: !Ref ContainerPort
       Protocol: HTTP
       TargetType: ip
-      HealthCheckPath: /
+      HealthCheckPath: /api/health
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
