@@ -43,8 +43,8 @@
 			"curl -f http://localhost:3000/api/health || exit 1"
 		],
 		"interval": 30,
-		"timeout": 30,
+		"timeout": 10,
 		"retries": 3,
-		"startPeriod": 160
+		"startPeriod": 60
 	}
 }
