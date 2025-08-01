@@ -59,7 +59,7 @@ Resources:
           HealthCheck:
             Command:
               - CMD-SHELL
-              - curl -f http://localhost:3000/ || exit 1
+              - "/bin/sh -c 'curl -f http://localhost:3000 || exit 1'"
             Interval: 30
             Timeout: 10
             Retries: 3
@@ -92,6 +92,7 @@ Resources:
       TaskDefinition: !Ref TaskDefinition
       EnableExecuteCommand: true
       ServiceName: !Sub ${AppName}ECSService
+      HealthCheckGracePeriodSeconds: 120
       SchedulingStrategy: REPLICA
       NetworkConfiguration:
         AwsvpcConfiguration:
@@ -102,7 +103,6 @@ Resources:
       LoadBalancers:
         - ContainerName: !Sub "${AppName}-Container"
           ContainerPort: !Ref ContainerPort
-          LoadBalancerName: !Ref AWS::NoValue
           TargetGroupArn: !Ref BlueTargetGroup
       PlatformVersion: LATEST
       DeploymentConfiguration:
@@ -153,12 +153,18 @@ Resources:
   BlueTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckPath: /api/health
       Name: BlueTargetGroup
       Port: !Ref ContainerPort
       Protocol: HTTP
       TargetType: ip
+      HealthCheckPath: /
       HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: 200-299
       VpcId: !Ref VpcId
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
@@ -167,12 +173,18 @@ Resources:
   GreenTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckPath: /api/health
       Name: GreenTargetGroup
       Port: !Ref ContainerPort
       Protocol: HTTP
       TargetType: ip
+      HealthCheckPath: /
       HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 10
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: 200-299
       VpcId: !Ref VpcId
       TargetGroupAttributes:
         - Key: deregistration_delay.timeout_seconds
