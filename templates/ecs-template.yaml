@@ -120,7 +120,7 @@ Resources:
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
     Properties:
-      MaxCapacity: 4
+      MaxCapacity: 0
       MinCapacity: 0
       ResourceId: !Join ['', ['service/', !Ref ECSCluster, '/', !GetAtt ECSService.Name]]
       RoleARN: !Ref AutoScalingRoleArn
@@ -161,7 +161,7 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 3
+      HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: 200-299
@@ -181,7 +181,7 @@ Resources:
       HealthCheckProtocol: HTTP
       HealthCheckIntervalSeconds: 30
       HealthCheckTimeoutSeconds: 10
-      HealthyThresholdCount: 3
+      HealthyThresholdCount: 2
       UnhealthyThresholdCount: 3
       Matcher:
         HttpCode: 200-299
