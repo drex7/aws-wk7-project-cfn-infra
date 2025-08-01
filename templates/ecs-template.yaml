@@ -60,7 +60,7 @@ Resources:
             Command:
               - CMD-SHELL
               - curl -f http://localhost:3000/api/health || exit 1
-            Interval: 10
+            Interval: 30
             Timeout: 10
             Retries: 3
             StartPeriod: 160
