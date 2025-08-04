@@ -122,7 +122,7 @@ Resources:
     Properties:
       MaxCapacity: 0
       MinCapacity: 0
-      ResourceId: !Sub 'service/${AppName}ECSCluster/${AppName}ECSService'
+      ResourceId: !Join ['', ['service/', !Ref ECSCluster, '/', !GetAtt ECSService.Name]]
       RoleARN: !Ref AutoScalingRoleArn
       ScalableDimension: ecs:service:DesiredCount
       ServiceNamespace: ecs
